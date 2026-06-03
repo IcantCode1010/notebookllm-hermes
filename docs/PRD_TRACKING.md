@@ -46,8 +46,8 @@ Repository baseline includes:
 | --- | --- | --- | --- |
 | 0. Project scaffold | Complete | Codex | Initial scaffold pushed to `main`. |
 | 1. Domain model and seed data | In progress | TBD | Prisma schema exists; migrations and seed script still needed. |
-| 2. Scoped retrieval contract | In progress | TBD | Mock retrieval exists; RAGFlow adapter still needed. |
-| 3. Hermes server adapter | In progress | TBD | Mock chat response exists; live Hermes adapter still needed. |
+| 2. Scoped retrieval contract | In progress | TBD | Mock retrieval exists with per-store topK behavior; RAGFlow adapter still needed. |
+| 3. Hermes server adapter | In progress | TBD | Mock chat response exists and rejects unknown stores; live Hermes adapter still needed. |
 | 4. Three-pane workspace UI | In progress | TBD | Shell exists; production UI states and mobile polish still needed. |
 | 5. Source viewer and citation navigation | In progress | TBD | Citation target wiring exists; PDF.js/OpenSeadragon rendering still needed. |
 | 6. Admin workflow | Not started | TBD | Store/document registry UI and RBAC mutation tests needed. |
@@ -88,8 +88,8 @@ Use this section for running product, implementation, and review notes.
 - Initial project scaffold created and pushed to GitHub.
 - npm baseline pinned to `npm@11.16.0`.
 - Remaining audit item: moderate PostCSS advisory through Next's nested dependency. npm's suggested fix currently forces a breaking downgrade, so it has not been applied.
+- Review cleanup completed: `/api/retrieve` now applies `topK` per selected store, and `/api/chat` now rejects unknown store IDs with `404`.
 
 ### Add Future Notes Here
 
 - 
-

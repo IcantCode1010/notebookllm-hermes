@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown aircraft store" }, { status: 404 });
   }
 
-  const evidence = mockEvidence
-    .filter((item) => parsed.data.storeIds.includes(item.storeId))
-    .slice(0, parsed.data.topK);
+  const evidence = stores.flatMap((store) =>
+    mockEvidence.filter((item) => item.storeId === store.id).slice(0, parsed.data.topK)
+  );
 
   return NextResponse.json({
     groups: groupEvidenceByStore(stores, evidence)

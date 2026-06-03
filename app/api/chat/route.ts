@@ -17,6 +17,11 @@ export async function POST(request: NextRequest) {
   }
 
   const stores = aircraftStores.filter((store) => parsed.data.storeIds.includes(store.id));
+
+  if (stores.length !== parsed.data.storeIds.length) {
+    return NextResponse.json({ error: "Unknown aircraft store" }, { status: 404 });
+  }
+
   const evidence = mockEvidence.filter((item) => parsed.data.storeIds.includes(item.storeId));
   const groups = groupEvidenceByStore(stores, evidence);
 
