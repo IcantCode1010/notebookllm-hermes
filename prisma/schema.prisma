@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  END_USER
+  ADMIN
+  REVIEWER
+}
+
+enum StoreStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum DocumentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DocumentType {
+  PDF
+  IMAGE
+  MIXED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(END_USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AircraftStore {
+  id               String           @id @default(cuid())
+  name             String
+  aircraftCode     String
+  ragflowDatasetId String           @unique
+  status           StoreStatus      @default(ACTIVE)
+  documents        SourceDocument[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model SourceDocument {
+  id          String         @id @default(cuid())
+  storeId     String
+  store       AircraftStore  @relation(fields: [storeId], references: [id])
+  title       String
+  type        DocumentType
+  status      DocumentStatus @default(DRAFT)
+  sourceUri   String
+  pageCount   Int?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model ChatSession {
+  id               String        @id @default(cuid())
+  selectedStoreIds Json
+  messages         ChatMessage[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+  role      String
+  content   String
+  createdAt DateTime    @default(now())
+}
+
+model Citation {
+  id          String  @id @default(cuid())
+  documentId  String
+  pageNumber  Int?
+  boundingBox Json?
+  imageId     String?
+}
