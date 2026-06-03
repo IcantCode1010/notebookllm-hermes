@@ -16,7 +16,13 @@ Select aircraft -> ask Hermes -> retrieve evidence -> answer with citations -> c
 
 ## Local Setup
 
+Required runtime:
+
+- Node.js `^20.17.0 || >=22.9.0`
+- npm `>=11.16.0`
+
 ```powershell
+npm install -g npm@11.16.0
 npm install
 Copy-Item .env.example .env.local
 npm run typecheck
