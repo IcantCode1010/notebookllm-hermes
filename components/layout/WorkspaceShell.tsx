@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useMemo, useState } from "react";
 import type { CitationTarget } from "@/lib/types";
 import { aircraftStores, sourceDocuments } from "@/lib/mock-data";
@@ -17,7 +18,7 @@ export function WorkspaceShell() {
   }, [selectedStoreIds]);
 
   return (
-    <main className="min-h-screen bg-[#eef3f8] text-slate-950">
+    <main className="min-h-screen bg-[#eef3f8] text-slate-950 lg:h-screen lg:overflow-hidden">
       <header className="flex min-h-16 items-center justify-between border-b border-cockpit-line bg-white px-4">
         <div>
           <h1 className="text-lg font-semibold tracking-normal text-cockpit-navy">Hermes Aviation Notebook</h1>
@@ -28,7 +29,10 @@ export function WorkspaceShell() {
         </div>
       </header>
 
-      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_390px]">
+      <div
+        data-testid="workspace-grid"
+        className="grid min-h-[calc(100vh-4rem)] grid-cols-1 lg:h-[calc(100vh-4rem)] lg:min-h-0 lg:grid-cols-[220px_minmax(640px,1fr)_300px] lg:overflow-hidden xl:grid-cols-[260px_minmax(760px,1fr)_320px]"
+      >
         <StoreNavigator
           stores={aircraftStores}
           documents={sourceDocuments}

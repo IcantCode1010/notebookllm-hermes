@@ -1,6 +1,7 @@
 "use client";
 
 import { SendHorizonal } from "lucide-react";
+import React from "react";
 import { useState } from "react";
 import type { CitationTarget } from "@/lib/types";
 import { CitationChip } from "@/components/hermes-chat/CitationChip";
@@ -41,17 +42,17 @@ export function HermesChat({ selectedStoreIds, onOpenSource }: HermesChatProps) 
   }
 
   return (
-    <aside className="bg-white">
-      <div className="border-b border-cockpit-line p-4">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+      <div className="shrink-0 border-b border-cockpit-line p-4">
         <h2 className="text-sm font-semibold text-cockpit-navy">Hermes chat</h2>
         <p className="text-xs text-slate-600">Grounded answers with source citations</p>
       </div>
 
-      <div className="space-y-4 p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          className="min-h-28 w-full resize-none rounded-md border border-cockpit-line p-3 text-sm outline-none focus:border-cockpit-blue"
+          className="min-h-24 w-full shrink-0 resize-none rounded-md border border-cockpit-line p-3 text-sm outline-none focus:border-cockpit-blue"
         />
         <button
           type="button"
@@ -63,12 +64,15 @@ export function HermesChat({ selectedStoreIds, onOpenSource }: HermesChatProps) 
           {isLoading ? "Asking Hermes" : "Ask Hermes"}
         </button>
 
-        <div className="rounded-md border border-cockpit-line bg-cockpit-panel p-3 text-xs text-slate-600">
+        <div className="shrink-0 rounded-md border border-cockpit-line bg-cockpit-panel p-3 text-xs text-slate-600">
           Selected stores: {selectedStoreIds.join(", ")}
         </div>
 
         {response ? (
-          <div className="rounded-md border border-cockpit-line p-4">
+          <div
+            data-testid="hermes-response-window"
+            className="min-h-0 max-h-[calc(100vh-22rem)] flex-1 overflow-y-auto rounded-md border border-cockpit-line p-4"
+          >
             <div className="text-sm leading-6 text-slate-800">{response.answer}</div>
             {response.citations.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">

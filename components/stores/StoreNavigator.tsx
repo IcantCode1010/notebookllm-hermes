@@ -1,6 +1,7 @@
 "use client";
 
 import { Files, Plane } from "lucide-react";
+import React from "react";
 import type { AircraftStore, SourceDocument } from "@/lib/types";
 
 type StoreNavigatorProps = {
@@ -32,7 +33,7 @@ export function StoreNavigator({
   }
 
   return (
-    <aside className="border-b border-cockpit-line bg-white lg:border-b-0 lg:border-r">
+    <aside className="h-full min-h-0 overflow-y-auto border-b border-cockpit-line bg-white lg:border-b-0 lg:border-r">
       <div className="border-b border-cockpit-line p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-cockpit-navy">
           <Plane className="h-4 w-4" />

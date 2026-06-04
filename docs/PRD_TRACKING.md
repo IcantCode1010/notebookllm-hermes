@@ -50,7 +50,7 @@ Repository baseline includes:
 | 2. Scoped retrieval contract | In progress | TBD | Mock fallback exists; `/api/retrieve` can call local RAGFlow for stores with dataset env overrides. |
 | 3. Hermes server adapter | In progress | TBD | `/api/chat` now grounds starter answers and citations in retrieved evidence; live generative Hermes adapter and streaming event contract still needed. |
 | 4. Three-pane workspace UI | In progress | TBD | Shell exists; default test scope is B737NG; streaming chat timeline, summarized activity rows, production UI states, and mobile polish still needed. |
-| 5. Source viewer and citation navigation | In progress | TBD | Citation target wiring exists; PDF.js/OpenSeadragon rendering still needed. |
+| 5. Source viewer and citation navigation | In progress | TBD | Citation clicks now open the full RAGFlow-backed PDF, jump to the cited page, and render nearby pages through PDF.js; image/OpenSeadragon rendering and bounding-box highlight overlays still needed. |
 | 6. Admin workflow | Not started | TBD | Store/document registry UI and RBAC mutation tests needed. |
 | 7. End-to-end MVP verification | Not started | TBD | Playwright critical-loop coverage needed. |
 
@@ -69,7 +69,7 @@ Repository baseline includes:
 
 - [ ] Which authentication provider should gate admin and end-user roles?
 - [ ] What is the exact Hermes API request/response contract?
-- [ ] Where will source PDFs/images be served from in MVP: local public assets, object storage, or RAGFlow URLs?
+- [ ] Where will source images be served from in MVP: local public assets, object storage, or RAGFlow URLs? Source PDFs now load through the app's local RAGFlow proxy.
 - [ ] Should chat sessions be saved in the first MVP release or deferred?
 - [ ] Should `/api/chat` streaming use SSE first, or a plain JSON endpoint until the Hermes adapter is connected?
 
@@ -110,6 +110,10 @@ Use this section for running product, implementation, and review notes.
 - Product direction updated: end users should see a streaming Hermes timeline with concise progress and summarized tool activity, while final answer text streams normally and citations remain first-class controls.
 - Tool activity should use product-facing labels such as "Search approved sources", "Rank evidence", "Generate answer", and "Validate citations"; implementation names, raw logs, prompts, API responses, and hidden reasoning stay server-side.
 - Adjusted local browser testing defaults so the workspace opens on the configured B737NG RAGFlow dataset instead of the unconfigured A320 mock fallback.
+- Added server-side PDF source proxying through `/api/sources/{documentId}` so the browser can load RAGFlow documents without seeing RAGFlow credentials.
+- Added PDF.js canvas rendering in the source viewer. Browser verification opened a live `05___029.PDF` citation at page 664 of 1034 with no console errors.
+- Upgraded PDF rendering from a single cited-page canvas to a full-document viewer that keeps the RAGFlow PDF loaded, jumps to the citation page, provides previous/next page controls, and virtualizes nearby page canvases so large manuals remain navigable.
+- Adjusted the workspace layout so desktop panels scroll independently: long Hermes answers stay inside the chat response window, and the source viewer gets a wider center column for full-page PDF viewing.
 
 ### Add Future Notes Here
 
