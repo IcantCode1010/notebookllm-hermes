@@ -33,6 +33,18 @@ npm run dev
 
 Open <http://localhost:3000>.
 
+## Local RAGFlow
+
+RAGFlow runs as a separate local Docker stack and is not vendored into this repo.
+
+```powershell
+npm run ragflow:setup
+npm run ragflow:start
+```
+
+Then open the RAGFlow UI, create datasets, and add the API key to `.env.local`.
+See [docs/LOCAL_RAGFLOW.md](docs/LOCAL_RAGFLOW.md).
+
 ## Environment
 
 Required server-side settings:

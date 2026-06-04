@@ -61,6 +61,7 @@ Repository baseline includes:
 | 2026-06-03 | Keep Hermes behind a server-side adapter. | Prevent secret exposure and preserve app control over retrieval scope. |
 | 2026-06-03 | Start with a Next.js-only app boundary. | Faster MVP while preserving option to split a FastAPI adapter later. |
 | 2026-06-03 | Use mock evidence in the scaffold. | Allows UI/API development before live RAGFlow and Hermes credentials are wired. |
+| 2026-06-04 | Run RAGFlow locally as a separate Docker stack. | Keeps RAGFlow infrastructure outside app code while allowing local datasets and API integration. |
 
 ## Open Questions
 
@@ -89,6 +90,11 @@ Use this section for running product, implementation, and review notes.
 - npm baseline pinned to `npm@11.16.0`.
 - Remaining audit item: moderate PostCSS advisory through Next's nested dependency. npm's suggested fix currently forces a breaking downgrade, so it has not been applied.
 - Review cleanup completed: `/api/retrieve` now applies `topK` per selected store, and `/api/chat` now rejects unknown store IDs with `404`.
+
+### 2026-06-04
+
+- Added local RAGFlow Docker helper scripts and setup docs.
+- RAGFlow remains a separate service boundary; this repo connects to it through `RAGFLOW_BASE_URL` and `RAGFLOW_API_KEY`.
 
 ### Add Future Notes Here
 

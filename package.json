@@ -14,7 +14,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "ragflow:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ragflow/setup.ps1",
+    "ragflow:start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ragflow/start.ps1",
+    "ragflow:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ragflow/stop.ps1"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
