@@ -22,7 +22,7 @@ type HermesChatProps = {
 };
 
 export function HermesChat({ selectedStoreIds, onOpenSource }: HermesChatProps) {
-  const [question, setQuestion] = useState("What powers the yellow hydraulic system?");
+  const [question, setQuestion] = useState("What does hydraulic system A power?");
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

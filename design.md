@@ -20,6 +20,7 @@ Select aircraft store -> ask Hermes -> retrieve scoped RAGFlow evidence -> show 
 - End users can read, ask, compare, and inspect. They cannot upload, register, approve, edit, archive, or delete documents.
 - RAGFlow and Hermes credentials stay server-side. Browser code talks only to this app's API routes.
 - The UI should be compact, scan-friendly, and useful for repeated work.
+- Agent progress should be visible without exposing raw internals. Stream answer text, but summarize search, ranking, generation, and citation-validation tool activity.
 
 ## Recommended Layout
 
@@ -109,6 +110,7 @@ Required sections:
 - Suggested prompts based on the selected aircraft store and active document.
 - Quick action chips: Summarize, Key points, Explain, Compare.
 - Error and empty states: no selected store, no evidence found, Hermes unavailable, RAGFlow unavailable.
+- Streaming activity timeline: concise progress rows for search, evidence ranking, answer generation, and citation validation.
 
 Interaction details:
 
@@ -116,10 +118,44 @@ Interaction details:
 - On submit, call `/api/chat` with `{ question, storeIds }`.
 - Suggested prompts and quick actions prefill or submit structured questions using the selected source scope.
 - Show retrieval/generation progress as distinct states when backend support exists.
+- Render tool calls as quiet summarized activity rows, not raw logs or separate assistant messages.
 - Preserve the last answer while a new answer is loading only if the pending state is clear.
 - Show a small "Grounded" status when the current answer was generated from retrieved evidence.
 - Show source count in the composer footer, for example `Sources: 5 documents`.
 - Do not show raw model/provider errors to end users.
+- Do not show raw RAGFlow JSON, full retrieved chunk dumps, prompts sent to Hermes, hidden reasoning, stack traces, API keys, or raw tool stdout unless a future admin/debug mode explicitly enables it.
+
+Streaming display target:
+
+```text
+You: What does hydraulic system A power?
+
+Hermes
+Searching B737 NG sources...
+Reviewed 5 chunks from 05___029.PDF
+Drafting grounded answer...
+
+Hydraulic system A powers ...
+[05___029.PDF, p. 664] [05___029.PDF, p. 721]
+
+Activity: 4 steps
+- Searched approved B737 NG sources
+- Ranked 5 source chunks
+- Generated a grounded answer
+- Validated citation targets
+```
+
+Expanded activity rows should remain summarized:
+
+```text
+Search approved sources
+Status: complete
+Scope: Boeing 737 NG
+Source engine: RAGFlow
+Results: 5 chunks
+Top source: 05___029.PDF, p. 664
+Duration: 418ms
+```
 
 ### `CitationChip`
 
@@ -211,6 +247,44 @@ type ChatResponse = {
 
 Every visible citation must resolve to a viewer action. If the backend cannot resolve a citation, the UI should show it as unavailable instead of creating a dead click target.
 
+## Streaming Event Model
+
+The near-term streaming contract should keep `/api/chat` as the only browser-facing answer route. The server remains responsible for retrieval, Hermes generation, citation validation, and redaction.
+
+```ts
+type ChatStreamEvent =
+  | { type: "run.started"; runId: string }
+  | { type: "progress"; label: string }
+  | { type: "tool.started"; id: string; name: string; label: string }
+  | {
+      type: "tool.done";
+      id: string;
+      status: "ok" | "error";
+      summary: string;
+      metadata?: {
+        scope?: string;
+        sourceEngine?: "RAGFlow";
+        resultCount?: number;
+        topSource?: string;
+        durationMs?: number;
+      };
+    }
+  | { type: "answer.delta"; text: string }
+  | { type: "citation.added"; citation: ChatResponse["citations"][number] }
+  | { type: "done"; usage?: { inputTokens?: number; outputTokens?: number; durationMs?: number } }
+  | { type: "error"; message: string };
+```
+
+Product-facing tool labels:
+
+- `Search approved sources`
+- `Rank evidence`
+- `Generate answer`
+- `Validate citations`
+- `Open source target`
+
+Implementation-facing names such as `retrieveFromRagflow`, `normalizeRagflowRetrieval`, provider request IDs, raw endpoint URLs, and raw response bodies must stay out of the default end-user UI.
+
 ## UI States
 
 ### Product Rail
@@ -228,8 +302,9 @@ Every visible citation must resolve to a viewer action. If the backend cannot re
 ### Chat
 
 - Empty: show an assistant intro card and recent example questions.
-- Loading: show request state without clearing the composer.
+- Loading: show request state without clearing the composer. When streaming is available, show the current progress label and summarized activity rows.
 - Answered: show answer with citation chips immediately below relevant answer text or in a citation strip.
+- Streaming answer: append visible answer text incrementally while keeping activity rows visually secondary.
 - Suggested prompts: show three to four context-aware prompts, each as a single-line button with a send icon.
 - Quick actions: show compact chips for Summarize, Key points, Explain, and Compare.
 - No evidence: explain that the selected source set did not return matching evidence.

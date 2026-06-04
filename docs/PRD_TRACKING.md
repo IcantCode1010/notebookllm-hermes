@@ -35,6 +35,7 @@ Repository baseline includes:
 - [ ] Multi-store comparison requires explicit multi-store selection.
 - [ ] Hermes only receives retrieved evidence and never processes documents directly.
 - [ ] Every visible citation maps to a source viewer action.
+- [ ] Chat responses stream visible answer text while tool/retrieval activity is summarized, not shown as raw logs.
 - [ ] End users cannot upload, register, edit, approve, or archive documents.
 - [ ] Admin store and document registration routes enforce RBAC.
 - [ ] Browser code never receives Hermes or RAGFlow API keys.
@@ -47,8 +48,8 @@ Repository baseline includes:
 | 0. Project scaffold | Complete | Codex | Initial scaffold pushed to `main`. |
 | 1. Domain model and seed data | In progress | TBD | Prisma schema exists; migrations and seed script still needed. |
 | 2. Scoped retrieval contract | In progress | TBD | Mock fallback exists; `/api/retrieve` can call local RAGFlow for stores with dataset env overrides. |
-| 3. Hermes server adapter | In progress | TBD | Mock chat response exists and rejects unknown stores; live Hermes adapter still needed. |
-| 4. Three-pane workspace UI | In progress | TBD | Shell exists; production UI states and mobile polish still needed. |
+| 3. Hermes server adapter | In progress | TBD | `/api/chat` now grounds starter answers and citations in retrieved evidence; live generative Hermes adapter and streaming event contract still needed. |
+| 4. Three-pane workspace UI | In progress | TBD | Shell exists; default test scope is B737NG; streaming chat timeline, summarized activity rows, production UI states, and mobile polish still needed. |
 | 5. Source viewer and citation navigation | In progress | TBD | Citation target wiring exists; PDF.js/OpenSeadragon rendering still needed. |
 | 6. Admin workflow | Not started | TBD | Store/document registry UI and RBAC mutation tests needed. |
 | 7. End-to-end MVP verification | Not started | TBD | Playwright critical-loop coverage needed. |
@@ -62,14 +63,15 @@ Repository baseline includes:
 | 2026-06-03 | Start with a Next.js-only app boundary. | Faster MVP while preserving option to split a FastAPI adapter later. |
 | 2026-06-03 | Use mock evidence in the scaffold. | Allows UI/API development before live RAGFlow and Hermes credentials are wired. |
 | 2026-06-04 | Run RAGFlow locally as a separate Docker stack. | Keeps RAGFlow infrastructure outside app code while allowing local datasets and API integration. |
+| 2026-06-04 | Show agent progress and tool activity as summarized streaming events, not verbatim tool output. | Gives users confidence that Hermes is searching and grounding answers without exposing raw RAGFlow JSON, prompts, secrets, logs, or hidden reasoning. |
 
 ## Open Questions
 
 - [ ] Which authentication provider should gate admin and end-user roles?
 - [ ] What is the exact Hermes API request/response contract?
-- [ ] What RAGFlow endpoint and response shape should the adapter normalize?
 - [ ] Where will source PDFs/images be served from in MVP: local public assets, object storage, or RAGFlow URLs?
 - [ ] Should chat sessions be saved in the first MVP release or deferred?
+- [ ] Should `/api/chat` streaming use SSE first, or a plain JSON endpoint until the Hermes adapter is connected?
 
 ## Risks
 
@@ -101,6 +103,13 @@ Use this section for running product, implementation, and review notes.
 - Added server-side `lib/ragflow/` retrieval adapter and local dataset override support such as `RAGFLOW_DATASET_STORE_B737NG`.
 - `/api/retrieve` now uses live RAGFlow evidence for configured stores and keeps mock evidence as the fallback for unconfigured stores.
 - Verified the B737NG store against local RAGFlow through the app API; the request returned three chunks from `05___029.PDF`.
+- `05___029.PDF` finished local RAGFlow processing with 1,183 indexed chunks.
+- `/api/chat` now uses the same server-side RAGFlow retrieval path for configured stores, returns evidence-backed starter answers, and emits citations that target retrieved chunks.
+- Confirmed the current app API, not the Hermes agent, is performing RAGFlow search. Hermes/LLM generation is not integrated yet.
+- Inspected `nesquena/hermes-webui` for relevant patterns. Adopted the architecture direction of a server-side runtime/agent adapter boundary and a browser-facing event contract, but not its full CLI-parity WebUI scope.
+- Product direction updated: end users should see a streaming Hermes timeline with concise progress and summarized tool activity, while final answer text streams normally and citations remain first-class controls.
+- Tool activity should use product-facing labels such as "Search approved sources", "Rank evidence", "Generate answer", and "Validate citations"; implementation names, raw logs, prompts, API responses, and hidden reasoning stay server-side.
+- Adjusted local browser testing defaults so the workspace opens on the configured B737NG RAGFlow dataset instead of the unconfigured A320 mock fallback.
 
 ### Add Future Notes Here
 

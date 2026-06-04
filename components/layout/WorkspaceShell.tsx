@@ -8,7 +8,8 @@ import { SourceViewer } from "@/components/source-viewer/SourceViewer";
 import { StoreNavigator } from "@/components/stores/StoreNavigator";
 
 export function WorkspaceShell() {
-  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([aircraftStores[0].id]);
+  const defaultStoreId = aircraftStores.find((store) => store.id === "store-b737ng")?.id ?? aircraftStores[0].id;
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([defaultStoreId]);
   const [activeCitation, setActiveCitation] = useState<CitationTarget | null>(null);
 
   const selectedDocuments = useMemo(() => {
