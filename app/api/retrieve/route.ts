@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { aircraftStores, mockEvidence } from "@/lib/mock-data";
+import { hasLocalRagflowConfig, retrieveFromRagflow } from "@/lib/ragflow/adapter";
 import { groupEvidenceByStore } from "@/lib/retrieval/grouping";
 
 const retrieveSchema = z.object({
@@ -22,11 +23,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown aircraft store" }, { status: 404 });
   }
 
-  const evidence = stores.flatMap((store) =>
-    mockEvidence.filter((item) => item.storeId === store.id).slice(0, parsed.data.topK)
-  );
+  try {
+    const evidenceGroups = await Promise.all(
+      stores.map((store) => {
+        if (hasLocalRagflowConfig(store)) {
+          return retrieveFromRagflow(store, parsed.data.question, parsed.data.topK);
+        }
 
-  return NextResponse.json({
-    groups: groupEvidenceByStore(stores, evidence)
-  });
+        return Promise.resolve(mockEvidence.filter((item) => item.storeId === store.id).slice(0, parsed.data.topK));
+      })
+    );
+
+    return NextResponse.json({
+      groups: groupEvidenceByStore(stores, evidenceGroups.flat())
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "RAGFlow retrieval failed" }, { status: 502 });
+  }
 }

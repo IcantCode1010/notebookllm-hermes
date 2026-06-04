@@ -69,6 +69,17 @@ RAGFLOW_API_KEY="ragflow-your-key"
 
 Do not expose the API key to client components.
 
+## Map Datasets To Aircraft Stores
+
+Aircraft stores have committed placeholder dataset IDs so the repo stays portable. For a local RAGFlow dataset, add an ignored `.env.local` override using the store ID:
+
+```env
+RAGFLOW_DATASET_STORE_A320="your-ragflow-dataset-id"
+RAGFLOW_DATASET_STORE_B737NG="your-ragflow-dataset-id"
+```
+
+The app checks these local overrides before falling back to committed store metadata.
+
 ## Stop RAGFlow
 
 ```powershell
@@ -93,4 +104,3 @@ app/api/retrieve/
 ```
 
 Browser code must never call RAGFlow directly or receive `RAGFLOW_API_KEY`.
-

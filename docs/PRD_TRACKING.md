@@ -46,7 +46,7 @@ Repository baseline includes:
 | --- | --- | --- | --- |
 | 0. Project scaffold | Complete | Codex | Initial scaffold pushed to `main`. |
 | 1. Domain model and seed data | In progress | TBD | Prisma schema exists; migrations and seed script still needed. |
-| 2. Scoped retrieval contract | In progress | TBD | Mock retrieval exists with per-store topK behavior; local RAGFlow is running and adapter normalization still needed. |
+| 2. Scoped retrieval contract | In progress | TBD | Mock fallback exists; `/api/retrieve` can call local RAGFlow for stores with dataset env overrides. |
 | 3. Hermes server adapter | In progress | TBD | Mock chat response exists and rejects unknown stores; live Hermes adapter still needed. |
 | 4. Three-pane workspace UI | In progress | TBD | Shell exists; production UI states and mobile polish still needed. |
 | 5. Source viewer and citation navigation | In progress | TBD | Citation target wiring exists; PDF.js/OpenSeadragon rendering still needed. |
@@ -98,6 +98,9 @@ Use this section for running product, implementation, and review notes.
 - Local RAGFlow stack is running in Docker from `.local/ragflow`, with the UI available at `http://localhost/` and API service at `http://localhost:9380`.
 - `.env.local` is configured locally with RAGFlow connection settings; the API key was verified against `GET /api/v1/datasets` without committing secrets.
 - First RAGFlow dataset/file ingestion has been started. Next validation step is a RAGFlow retrieval test using representative aviation questions before wiring the app adapter.
+- Added server-side `lib/ragflow/` retrieval adapter and local dataset override support such as `RAGFLOW_DATASET_STORE_B737NG`.
+- `/api/retrieve` now uses live RAGFlow evidence for configured stores and keeps mock evidence as the fallback for unconfigured stores.
+- Verified the B737NG store against local RAGFlow through the app API; the request returned three chunks from `05___029.PDF`.
 
 ### Add Future Notes Here
 
