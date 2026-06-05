@@ -15,6 +15,8 @@ type ChatCitation = {
 type ChatResponse = {
   answer: string;
   citations: ChatCitation[];
+  events?: { label: string; status: string }[];
+  toolCalls?: { name: string; status: string; summary: string }[];
 };
 
 type HermesChatProps = {
@@ -73,6 +75,24 @@ export function HermesChat({ selectedStoreIds, onOpenSource }: HermesChatProps) 
             data-testid="hermes-response-window"
             className="min-h-0 max-h-[calc(100vh-22rem)] flex-1 overflow-y-auto rounded-md border border-cockpit-line p-4"
           >
+            {response.events && response.events.length > 0 ? (
+              <div className="mb-4 rounded-md border border-cockpit-line bg-cockpit-panel p-3">
+                <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Hermes activity</div>
+                <div className="space-y-2">
+                  {response.events.map((event) => {
+                    const matchingToolCall = response.toolCalls?.find((toolCall) => toolCallLabel(toolCall.name) === event.label);
+                    return (
+                      <div key={event.label} className="rounded border border-cockpit-line bg-white p-2">
+                        <div className="text-xs font-semibold text-cockpit-navy">{event.label}</div>
+                        {matchingToolCall ? (
+                          <div className="mt-1 text-xs text-slate-600">{matchingToolCall.summary}</div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <div className="text-sm leading-6 text-slate-800">{response.answer}</div>
             {response.citations.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -95,4 +115,20 @@ export function HermesChat({ selectedStoreIds, onOpenSource }: HermesChatProps) 
       </div>
     </aside>
   );
+}
+
+function toolCallLabel(toolName: string) {
+  if (toolName === "searchApprovedSources") {
+    return "Search approved sources";
+  }
+
+  if (toolName === "searchHybridEvidence") {
+    return "Search vector store";
+  }
+
+  if (toolName === "validateCitationTargets") {
+    return "Validate citations";
+  }
+
+  return "";
 }

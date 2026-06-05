@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { useMemo, useState } from "react";
-import type { CitationTarget } from "@/lib/types";
+import { useEffect, useMemo, useState } from "react";
+import type { CitationTarget, SourceDocument } from "@/lib/types";
 import { aircraftStores, sourceDocuments } from "@/lib/mock-data";
 import { HermesChat } from "@/components/hermes-chat/HermesChat";
 import { SourceViewer } from "@/components/source-viewer/SourceViewer";
@@ -12,10 +12,55 @@ export function WorkspaceShell() {
   const defaultStoreId = aircraftStores.find((store) => store.id === "store-b737ng")?.id ?? aircraftStores[0].id;
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([defaultStoreId]);
   const [activeCitation, setActiveCitation] = useState<CitationTarget | null>(null);
+  const [activeDocument, setActiveDocument] = useState<SourceDocument | null>(null);
+  const [documents, setDocuments] = useState<SourceDocument[]>(sourceDocuments);
 
   const selectedDocuments = useMemo(() => {
-    return sourceDocuments.filter((document) => selectedStoreIds.includes(document.storeId));
+    return documents.filter((document) => selectedStoreIds.includes(document.storeId));
+  }, [documents, selectedStoreIds]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    for (const storeId of selectedStoreIds) {
+      params.append("storeIds", storeId);
+    }
+
+    async function loadDocuments() {
+      try {
+        const response = await fetch(`/api/documents?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error("Document library request failed.");
+        }
+
+        const body = (await response.json()) as { documents?: SourceDocument[] };
+        if (!cancelled) {
+          setDocuments(body.documents || []);
+        }
+      } catch {
+        if (!cancelled) {
+          setDocuments(sourceDocuments);
+        }
+      }
+    }
+
+    void loadDocuments();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedStoreIds]);
+
+  function handleSelectedStoreIdsChange(storeIds: string[]) {
+    setSelectedStoreIds(storeIds);
+    setActiveCitation(null);
+    setActiveDocument(null);
+  }
+
+  function handleOpenDocument(document: SourceDocument) {
+    setActiveCitation(null);
+    setActiveDocument(document);
+  }
 
   return (
     <main className="min-h-screen bg-[#eef3f8] text-slate-950 lg:h-screen lg:overflow-hidden">
@@ -35,12 +80,20 @@ export function WorkspaceShell() {
       >
         <StoreNavigator
           stores={aircraftStores}
-          documents={sourceDocuments}
+          documents={documents}
           selectedStoreIds={selectedStoreIds}
-          onSelectedStoreIdsChange={setSelectedStoreIds}
+          onSelectedStoreIdsChange={handleSelectedStoreIdsChange}
+          onOpenDocument={handleOpenDocument}
+          activeDocumentId={activeDocument?.id ?? null}
         />
-        <SourceViewer documents={selectedDocuments} activeCitation={activeCitation} />
-        <HermesChat selectedStoreIds={selectedStoreIds} onOpenSource={setActiveCitation} />
+        <SourceViewer documents={selectedDocuments} activeCitation={activeCitation} activeDocument={activeDocument} />
+        <HermesChat
+          selectedStoreIds={selectedStoreIds}
+          onOpenSource={(target) => {
+            setActiveDocument(null);
+            setActiveCitation(target);
+          }}
+        />
       </div>
     </main>
   );

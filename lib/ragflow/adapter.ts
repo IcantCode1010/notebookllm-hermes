@@ -1,4 +1,4 @@
-import type { AircraftStore, BoundingBox, EvidenceItem } from "@/lib/types";
+import type { AircraftStore, BoundingBox, EvidenceItem, SourceDocument } from "@/lib/types";
 
 type EnvLike = Record<string, string | undefined>;
 
@@ -29,6 +29,27 @@ export type RagflowRetrievalResponse = {
 };
 
 type FetchLike = typeof fetch;
+
+type RagflowDocument = {
+  id?: unknown;
+  name?: unknown;
+  display_name?: unknown;
+  filename?: unknown;
+  document_name?: unknown;
+  type?: unknown;
+  chunk_num?: unknown;
+  chunk_count?: unknown;
+  size?: unknown;
+};
+
+type RagflowDocumentsResponse = {
+  code?: unknown;
+  message?: unknown;
+  data?: {
+    docs?: RagflowDocument[];
+    documents?: RagflowDocument[];
+  } | RagflowDocument[];
+};
 
 export function resolveStoreDatasetId(store: AircraftStore, env: EnvLike = process.env) {
   const storeKey = `RAGFLOW_DATASET_${store.id.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}`;
@@ -81,6 +102,66 @@ export async function retrieveFromRagflow(
   return normalizeRagflowRetrieval(store, (await response.json()) as RagflowRetrievalResponse);
 }
 
+export async function listDocumentsFromRagflow(
+  store: AircraftStore,
+  fetchImpl: FetchLike = fetch,
+  env: EnvLike = process.env
+): Promise<SourceDocument[]> {
+  const baseUrl = env.RAGFLOW_BASE_URL;
+  const apiKey = env.RAGFLOW_API_KEY;
+  const datasetId = resolveStoreDatasetId(store, env);
+
+  if (!baseUrl || !apiKey) {
+    throw new Error("RAGFlow is not configured.");
+  }
+
+  const response = await fetchImpl(new URL(`/api/v1/datasets/${datasetId}/documents?page=1&page_size=1000`, baseUrl), {
+    headers: {
+      Authorization: `Bearer ${apiKey}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`RAGFlow document request failed with HTTP ${response.status}.`);
+  }
+
+  return normalizeRagflowDocuments(store, (await response.json()) as RagflowDocumentsResponse);
+}
+
+export function normalizeRagflowDocuments(store: AircraftStore, response: RagflowDocumentsResponse): SourceDocument[] {
+  if (response.code !== undefined && response.code !== 0) {
+    const message = typeof response.message === "string" && response.message ? response.message : "unknown error";
+    throw new Error(`RAGFlow document listing failed: ${message}`);
+  }
+
+  const rawDocuments = Array.isArray(response.data)
+    ? response.data
+    : response.data?.docs || response.data?.documents || [];
+
+  return rawDocuments
+    .map((document, index): SourceDocument => {
+      const id = asString(document.id) || `ragflow-document-${index + 1}`;
+      const title =
+        asString(document.name) ||
+        asString(document.display_name) ||
+        asString(document.filename) ||
+        asString(document.document_name) ||
+        "RAGFlow document";
+
+      return {
+        id,
+        storeId: store.id,
+        title,
+        documentType: documentTypeFor(title, asString(document.type)),
+        status: "PUBLISHED",
+        sourceUri: `/api/sources/${encodeURIComponent(id)}`,
+        chunkCount: asNumber(document.chunk_num) ?? asNumber(document.chunk_count),
+        sizeBytes: asNumber(document.size)
+      };
+    })
+    .filter((document) => document.id.length > 0);
+}
+
 export function normalizeRagflowRetrieval(store: AircraftStore, response: RagflowRetrievalResponse): EvidenceItem[] {
   if (response.code !== 0) {
     const message = typeof response.message === "string" && response.message ? response.message : "unknown error";
@@ -122,6 +203,25 @@ function asString(value: unknown) {
 
 function asNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function documentTypeFor(title: string, type: string): SourceDocument["documentType"] {
+  const normalized = `${title} ${type}`.toLowerCase();
+  if (normalized.includes(".pdf") || normalized.includes("pdf")) {
+    return "PDF";
+  }
+
+  if (
+    normalized.includes(".png") ||
+    normalized.includes(".jpg") ||
+    normalized.includes(".jpeg") ||
+    normalized.includes(".webp") ||
+    normalized.includes("image")
+  ) {
+    return "IMAGE";
+  }
+
+  return "PDF";
 }
 
 function firstPosition(value: unknown): { pageNumber?: number; boundingBox?: BoundingBox } | undefined {

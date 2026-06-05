@@ -16,6 +16,8 @@ export type SourceDocument = {
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   sourceUri: string;
   pageCount?: number;
+  chunkCount?: number;
+  sizeBytes?: number;
 };
 
 export type BoundingBox = {

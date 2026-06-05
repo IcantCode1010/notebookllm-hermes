@@ -9,13 +9,17 @@ type StoreNavigatorProps = {
   documents: SourceDocument[];
   selectedStoreIds: string[];
   onSelectedStoreIdsChange: (storeIds: string[]) => void;
+  onOpenDocument: (document: SourceDocument) => void;
+  activeDocumentId: string | null;
 };
 
 export function StoreNavigator({
   stores,
   documents,
   selectedStoreIds,
-  onSelectedStoreIdsChange
+  onSelectedStoreIdsChange,
+  onOpenDocument,
+  activeDocumentId
 }: StoreNavigatorProps) {
   const comparisonEnabled = selectedStoreIds.length > 1;
 
@@ -86,10 +90,22 @@ export function StoreNavigator({
           {documents
             .filter((document) => selectedStoreIds.includes(document.storeId))
             .map((document) => (
-              <div key={document.id} className="rounded-md border border-cockpit-line bg-cockpit-panel p-3">
+              <button
+                key={document.id}
+                type="button"
+                onClick={() => onOpenDocument(document)}
+                className={`w-full rounded-md border p-3 text-left ${
+                  activeDocumentId === document.id
+                    ? "border-cockpit-blue bg-blue-50"
+                    : "border-cockpit-line bg-cockpit-panel hover:bg-slate-50"
+                }`}
+              >
                 <div className="text-sm font-medium">{document.title}</div>
                 <div className="mt-1 text-xs text-slate-600">{document.documentType}</div>
-              </div>
+                {document.chunkCount ? (
+                  <div className="mt-1 text-xs text-slate-500">{document.chunkCount.toLocaleString()} chunks</div>
+                ) : null}
+              </button>
             ))}
         </div>
       </div>

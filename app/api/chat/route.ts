@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { aircraftStores, mockEvidence } from "@/lib/mock-data";
-import { resolveCitationTarget } from "@/lib/citations/resolve";
-import { hasLocalRagflowConfig, retrieveFromRagflow } from "@/lib/ragflow/adapter";
-import { groupEvidenceByStore } from "@/lib/retrieval/grouping";
+import { aircraftStores } from "@/lib/mock-data";
+import { runHermesAgent } from "@/lib/hermes/agent";
+import { callHermesVpsAgent, hasHermesVpsConfig } from "@/lib/hermes/vps-adapter";
 
 const chatSchema = z.object({
   question: z.string().min(1),
   storeIds: z.array(z.string()).min(1)
 });
-
-const CHAT_RETRIEVAL_LIMIT = 5;
-const CITATION_LIMIT = 3;
 
 export async function POST(request: NextRequest) {
   const parsed = chatSchema.safeParse(await request.json());
@@ -27,55 +23,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const evidenceGroups = await Promise.all(
-      stores.map((store) => {
-        if (hasLocalRagflowConfig(store)) {
-          return retrieveFromRagflow(store, parsed.data.question, CHAT_RETRIEVAL_LIMIT);
-        }
+    if (hasHermesVpsConfig()) {
+      if (process.env.HERMES_CHAT_RETRIEVAL_MODE === "server_prefetch") {
+        const retrieval = await runHermesAgent({ question: parsed.data.question, stores });
+        const prefetchedEvidence = retrieval.groups.flatMap((group) => group.items).slice(0, 3);
 
-        return Promise.resolve(
-          mockEvidence.filter((item) => item.storeId === store.id).slice(0, CHAT_RETRIEVAL_LIMIT)
+        return NextResponse.json(
+          await callHermesVpsAgent({
+            question: parsed.data.question,
+            stores,
+            prefetchedEvidence
+          })
         );
-      })
-    );
+      }
 
-    const evidence = evidenceGroups.flat();
-    const groups = groupEvidenceByStore(stores, evidence);
-
-    if (evidence.length === 0) {
-      return NextResponse.json({
-        answer: "No approved evidence was retrieved for the selected aircraft store.",
-        citations: [],
-        groups
-      });
+      return NextResponse.json(await callHermesVpsAgent({ question: parsed.data.question, stores }));
     }
 
-    const citations = evidence.slice(0, CITATION_LIMIT).map((item) => ({
-      id: item.id,
-      label: `${item.documentTitle}${item.pageNumber ? `, p. ${item.pageNumber}` : ""}`,
-      target: resolveCitationTarget(item, item.documentId)
-    }));
-
-    return NextResponse.json({
-      answer: buildGroundedStarterAnswer(evidence),
-      citations,
-      groups
-    });
+    return NextResponse.json(await runHermesAgent({ question: parsed.data.question, stores }));
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "RAGFlow retrieval failed" }, { status: 502 });
+    return NextResponse.json({ error: "Hermes chat request failed" }, { status: 502 });
   }
-}
-
-function buildGroundedStarterAnswer(evidence: { content: string }[]) {
-  const excerpts = evidence
-    .map((item) => item.content.trim())
-    .filter(Boolean)
-    .slice(0, 2);
-
-  if (excerpts.length === 0) {
-    return "Hermes found approved evidence, but the retrieved chunks did not include readable text.";
-  }
-
-  return excerpts.join("\n\n");
 }

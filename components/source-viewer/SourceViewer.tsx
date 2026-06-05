@@ -8,12 +8,13 @@ import { PdfCanvasViewer } from "@/components/source-viewer/PdfCanvasViewer";
 type SourceViewerProps = {
   documents: SourceDocument[];
   activeCitation: CitationTarget | null;
+  activeDocument?: SourceDocument | null;
 };
 
-export function SourceViewer({ documents, activeCitation }: SourceViewerProps) {
+export function SourceViewer({ documents, activeCitation, activeDocument: manuallyOpenedDocument = null }: SourceViewerProps) {
   const matchedDocument = activeCitation
     ? documents.find((document) => document.id === activeCitation.documentId)
-    : documents[0];
+    : manuallyOpenedDocument || documents[0];
   const activeDocument = matchedDocument || documentFromCitation(activeCitation);
   const shouldRenderPdf =
     activeDocument?.documentType === "PDF" && (Boolean(activeCitation) || activeDocument.sourceUri.startsWith("/api/sources/"));
